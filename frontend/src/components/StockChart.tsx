@@ -45,7 +45,7 @@ const StockChart: React.FC<StockChartProps> = ({ data, ticker, height = 450, onT
   const [draggingLineId, setDraggingLineId] = useState<string | null>(null);
   const [dragStartPos, setDragStartPos] = useState<{ time: number; price: number } | null>(null);
 
-  const timeframes = ['1H', '4H', '1D', '1W', '1M'];
+  const timeframes = ['5m', '15m', '1H', '4H', '1D', '1W', '1M'];
 
   const calculateSMA = (data: ChartPoint[], period: number) => {
     const smaData = [];
@@ -66,21 +66,68 @@ const StockChart: React.FC<StockChartProps> = ({ data, ticker, height = 450, onT
     const gridColor = isDark ? '#1f2937' : '#f3f4f6';
 
     const chart = createChart(chartContainerRef.current, {
-      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor },
-      grid: { vertLines: { color: gridColor }, horzLines: { color: gridColor } },
+      layout: { 
+        background: { type: ColorType.Solid, color: 'transparent' }, 
+        textColor,
+        fontSize: 12,
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+      },
+      grid: { 
+        vertLines: { color: gridColor, style: LineStyle.SparseDashed }, 
+        horzLines: { color: gridColor, style: LineStyle.SparseDashed } 
+      },
       width: chartContainerRef.current.clientWidth,
       height,
-      timeScale: { borderColor: gridColor, timeVisible: true },
-      rightPriceScale: { borderColor: gridColor },
+      timeScale: { 
+        borderColor: gridColor, 
+        timeVisible: true,
+        secondsVisible: false,
+        barSpacing: 10,
+        fixLeftEdge: true,
+      },
+      rightPriceScale: { 
+        borderColor: gridColor,
+        autoScale: true,
+        alignLabels: true,
+        borderVisible: true,
+      },
       crosshair: {
-        vertLine: { color: isDark ? '#4b5563' : '#d1d5db', width: 0.5, style: LineStyle.Dashed },
-        horzLine: { color: isDark ? '#4b5563' : '#d1d5db', width: 0.5, style: LineStyle.Dashed },
+        mode: 0, // Normal mode
+        vertLine: { 
+          color: isDark ? '#64748b' : '#94a3b8', 
+          width: 1, 
+          style: LineStyle.LargeDashed,
+          labelBackgroundColor: isDark ? '#0f172a' : '#1e293b',
+        },
+        horzLine: { 
+          color: isDark ? '#64748b' : '#94a3b8', 
+          width: 1, 
+          style: LineStyle.LargeDashed,
+          labelBackgroundColor: isDark ? '#0f172a' : '#1e293b',
+        },
+      },
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+      },
+      handleScale: {
+        axisPressedMouseMove: true,
+        mouseWheel: true,
+        pinch: true,
+      },
+      localization: {
+        priceFormatter: (price: number) => price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       },
     });
 
     const candlestickSeries = chart.addCandlestickSeries({
-      upColor: '#10b981', downColor: '#ef4444', borderVisible: false,
-      wickUpColor: '#10b981', wickDownColor: '#ef4444',
+      upColor: '#10b981', 
+      downColor: '#ef4444', 
+      borderVisible: false,
+      wickUpColor: '#10b981', 
+      wickDownColor: '#ef4444',
+      priceLineVisible: true,
+      lastValueVisible: true,
     });
 
     candlestickSeries.setData(data as any);
@@ -229,14 +276,23 @@ const StockChart: React.FC<StockChartProps> = ({ data, ticker, height = 450, onT
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-300 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-900/50">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5"><BarChart2 size={14} className="text-blue-500" /><span className="text-[11px] font-bold uppercase">{ticker}</span></div>
+            <div className="flex items-center gap-1.5">
+              <BarChart2 size={14} className="text-blue-500" />
+              <span className="text-[12px] font-extrabold uppercase tracking-tight font-mono">{ticker}</span>
+            </div>
             <div className="flex bg-gray-200/50 dark:bg-gray-800 p-0.5 rounded-lg">
               {timeframes.map(tf => (
-                <button key={tf} onClick={() => {setCurrentTimeframe(tf); onTimeframeChange?.(tf)}} className={`px-2 py-1 rounded-md text-[10px] font-bold ${currentTimeframe === tf ? 'bg-slate-50 dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-500'}`}>{tf}</button>
+                <button 
+                  key={tf} 
+                  onClick={() => {setCurrentTimeframe(tf); onTimeframeChange?.(tf)}} 
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${currentTimeframe === tf ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                >
+                  {tf}
+                </button>
               ))}
             </div>
           </div>
-          {isDragging && <div className="text-[10px] font-bold text-blue-500 animate-pulse">DRAGGING...</div>}
+          {isDragging && <div className="text-[11px] font-black text-blue-500 animate-pulse tracking-widest">DRAGGING...</div>}
         </div>
         <div ref={chartContainerRef} className={`w-full relative ${isDragging ? 'cursor-grabbing' : activeTool === 'move' ? 'cursor-grab' : 'cursor-crosshair'}`} />
       </div>
